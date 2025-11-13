@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dashboard - Deadline Buddy</title>
+    <link rel="stylesheet" href="style.css" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;700&family=Fira+Code:wght@400&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.0.3/src/regular/style.css"
+    />
+  </head>
+  <body>
+    <!-- Navigation -->
+    <nav class="main-nav">
+      <div class="nav-brand">
+        <i class="ph ph-target"></i>
+        <h1>Deadline Buddy</h1>
+      </div>
+      <ul class="nav-links">
+    <li><a href="dashboard.html" class="nav-link"><i class="ph ph-house"></i> Dashboard</a></li>
+    <li><a href="subjects.html" class="nav-link"><i class="ph ph-books"></i> Subjects</a></li>
+    <li><a href="notifications.html" class="nav-link"><i class="ph ph-bell"></i> Notifications</a></li>
+    <li><a href="study-tips.html" class="nav-link"><i class="ph ph-lightbulb"></i> Study Tips</a></li>
+    <li><a href="profile.html" class="nav-link"><i class="ph ph-user"></i> Profile</a></li>
+    </ul>
+    </nav>
+
+    <!-- Add Task Modal -->
+    <input type="checkbox" id="add-task-modal" class="modal-toggle" />
+    <div class="modal-overlay">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2>Add New Task</h2>
+          <label for="add-task-modal" class="close-btn">&times;</label>
+        </div>
+        <form class="task-form" id="taskForm">
+          <div class="form-group">
+            <label>Task Name</label>
+            <input
+              type="text"
+              id="taskName"
+              placeholder="Enter task name"
+              required
+            />
+          </div>
+          <div class="form-group">
+            <label>Subject</label>
+            <select id="taskSubject" required>
+    <option value="">Select Subject</option>
+</select>
+
+          </div>
+          <div class="form-group">
+            <label>Due Date</label>
+            <input type="date" id="taskDate" required />
+          </div>
+          <div class="form-group">
+            <label>Priority</label>
+            <select id="taskPriority" required>
+              <option value="">Select priority</option>
+              <option value="high">High</option>
+              <option value="medium">Medium</option>
+              <option value="low">Low</option>
+            </select>
+          </div>
+          <button type="submit" class="btn-primary">Add Task</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <!-- Dashboard Section -->
+      <section class="section active">
+<div class="section-header">
+  <h2>Dashboard</h2>
+  <div class="button-group">
+    <label for="add-task-modal" class="btn-primary">
+      <i class="ph ph-plus"></i> Add New Task
+    </label>
+
+    <button class="btn-primary" onclick="resetAllTasks()">
+      <i class="ph ph-trash"></i> Reset All Tasks
+    </button>
+  </div>
+</div>
+        <!-- Statistics Cards -->
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-icon">
+              <i class="ph ph-clock"></i>
+            </div>
+            <div class="stat-content">
+              <h3 id="pendingCount">3</h3>
+              <p>Pending Tasks</p>
+            </div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-icon">
+              <i class="ph ph-check-circle"></i>
+            </div>
+            <div class="stat-content">
+              <h3 id="completedCount">2</h3>
+              <p>Completed Today</p>
+            </div>
+          </div>
+          
+          <div class="stat-card">
+            <div class="stat-icon">
+              <i class="ph ph-trend-up"></i>
+            </div>
+            <div class="stat-content">
+              <h3 id="progressPercent">75%</h3>
+              <p>Weekly Progress</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Progress Overview -->
+        <div class="progress-section">
+          <div class="card progress-card">
+            <h3>Weekly Progress</h3>
+            <div class="progress-container">
+              <div class="progress-bar">
+                <div class="progress-fill" style="width: 75%"></div>
+              </div>
+              <span class="progress-text"
+                >15 of 20 tasks completed this week</span
+              >
+            </div>
+            <div class="progress-details">
+              <div class="progress-item">
+                <span class="progress-label">High Priority</span>
+                <div class="mini-progress">
+                  <div class="mini-progress-fill high" style="width: 60%"></div>
+                </div>
+                <span class="progress-count">3/5</span>
+              </div>
+              <div class="progress-item">
+                <span class="progress-label">Medium Priority</span>
+                <div class="mini-progress">
+                  <div
+                    class="mini-progress-fill medium"
+                    style="width: 80%"
+                  ></div>
+                </div>
+                <span class="progress-count">8/10</span>
+              </div>
+              <div class="progress-item">
+                <span class="progress-label">Low Priority</span>
+                <div class="mini-progress">
+                  <div class="mini-progress-fill low" style="width: 100%"></div>
+                </div>
+                <span class="progress-count">4/4</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+       <!-- Main Dashboard Grid -->
+<div class="dashboard-grid">
+  <div class="card task-card">
+    <div class="card-header">
+      <h3><i class="ph ph-clock"></i> Upcoming Deadlines</h3>
+      <span class="task-count" id="upcomingCount">0</span>
+    </div>
+    <div class="task-list" id="upcomingTasks">
+      <!-- Tasks will be dynamically added here -->
+    </div>
+  </div>
+
+  <div class="card task-card">
+    <div class="card-header">
+      <h3><i class="ph ph-check-circle"></i> Completed Tasks</h3>
+      <span class="task-count" id="completedCountDisplay">0</span>
+    </div>
+    <div class="task-list" id="completedTasks">
+      <!-- Completed tasks will be dynamically added here -->
+    </div>
+  </div>
+</div>
+          
+
+    <script>
+      
+// Task Storage Management
+const getTasks = () => JSON.parse(localStorage.getItem("deadlineBuddyTasks") || "[]");
+const saveTasks = (tasks) => localStorage.setItem("deadlineBuddyTasks", JSON.stringify(tasks));
+const getCompleted = () => JSON.parse(localStorage.getItem("deadlineBuddyCompletedTasks") || "[]");
+const saveCompleted = (tasks) => localStorage.setItem("deadlineBuddyCompletedTasks", JSON.stringify(tasks));
+
+// Function to add notification when a new task is created
+async function addTaskNotification(taskData) {
+    try {
+        // Get existing notifications from localStorage
+        let notifications = JSON.parse(localStorage.getItem('deadlineBuddyNotifications') || '[]');
+        
+        // If localStorage is empty, load from JSON first
+        if (notifications.length === 0) {
+            try {
+                const response = await fetch('notifications.json');
+                notifications = await response.json();
+            } catch (error) {
+                console.log('No existing notifications found, starting fresh');
+                notifications = [];
+            }
+        }
+        
+        // Generate a unique ID for the notification
+        const newNotificationId = notifications.length > 0 
+            ? Math.max(...notifications.map(n => n.id)) + 1 
+            : 1;
+        
+        // Determine priority based on days until deadline
+        const taskDate = new Date(taskData.date);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        taskDate.setHours(0, 0, 0, 0);
+        const daysUntil = Math.ceil((taskDate - today) / (1000 * 60 * 60 * 24));
+        
+        let priority = taskData.priority || 'low';
+        
+        // Determine notification type
+        let notificationType = 'deadline';
+        
+        // Create descriptive message based on days until deadline
+        let messageText = '';
+        if (daysUntil < 0) {
+            messageText = `${taskData.name} was due ${Math.abs(daysUntil)} days ago`;
+        } else if (daysUntil === 0) {
+            messageText = `${taskData.name} is due today`;
+        } else if (daysUntil === 1) {
+            messageText = `${taskData.name} is due tomorrow`;
+        } else {
+            messageText = `${taskData.name} for ${taskData.subject} is due in ${daysUntil} days`;
+        }
+        
+        // Create new notification object matching JSON structure
+        const newNotification = {
+            id: newNotificationId,
+            type: notificationType,
+            title: `New Task: ${taskData.name}`,
+            message: messageText,
+            priority: priority,
+            date: taskData.date,
+            time: '11:59 PM',
+            subject: taskData.subject,
+            read: false
+        };
+        
+        // Add to beginning of notifications array (newest first)
+        notifications.unshift(newNotification);
+        
+        // Save back to localStorage
+        localStorage.setItem('deadlineBuddyNotifications', JSON.stringify(notifications));
+        
+        console.log('Notification created successfully:', newNotification);
+        
+    } catch (error) {
+        console.error('Error creating notification:', error);
+    }
+}
+
+// Update Statistics
+function updateStats() {
+  const tasks = getTasks();
+  const completed = getCompleted();
+  const total = tasks.length + completed.length;
+  
+  document.getElementById("pendingCount").textContent = tasks.length;
+  document.getElementById("completedCount").textContent = completed.length;
+  document.getElementById("completedCountDisplay").textContent = completed.length;
+  document.getElementById("upcomingCount").textContent = tasks.length;
+  
+  // Calculate weekly progress percentage
+  const progress = total > 0 ? Math.round((completed.length / total) * 100) : 0;
+  document.getElementById("progressPercent").textContent = progress + "%";
+  document.querySelector(".progress-fill").style.width = progress + "%";
+  document.querySelector(".progress-text").textContent = 
+    `${completed.length} of ${total} tasks completed`;
+  
+  // Update priority progress bars
+  updatePriorityProgress(tasks, completed);
+}
+
+// Update Priority Progress
+function updatePriorityProgress(tasks, completed) {
+  const priorities = ["high", "medium", "low"];
+  
+  priorities.forEach(p => {
+    const totalP = [...tasks, ...completed].filter(t => t.priority === p).length;
+    const completedP = completed.filter(t => t.priority === p).length;
+    const percent = totalP > 0 ? Math.round((completedP / totalP) * 100) : 0;
+    
+    const bar = document.querySelector(`.mini-progress-fill.${p}`);
+    const count = bar.parentElement.nextElementSibling;
+    
+    if (bar) bar.style.width = percent + "%";
+    if (count) count.textContent = `${completedP}/${totalP}`;
+  });
+}
+
+// Add Task to DOM
+function addTaskToDOM(task, animate = false) {
+  const item = document.createElement("label");
+  item.className = "task-item";
+  item.dataset.dynamic = "true";
+  item.dataset.taskId = task.id;
+  
+  const daysLeft = Math.ceil((new Date(task.date) - new Date()) / (1000 * 60 * 60 * 24));
+  const urgentClass = daysLeft <= 3 ? "urgent" : "";
+  
+  item.innerHTML = `
+    <input type="checkbox" class="task-checkbox">
+    <div class="task-content">
+      <div class="task-info">
+        <span class="task-name">${task.name}</span>
+        <span class="task-date">${task.formattedDate}</span>
+        <span class="task-subject">${task.subject}</span>
+      </div>
+      <div class="task-meta">
+        <span class="priority-tag ${task.priority}">${task.priority.charAt(0).toUpperCase() + task.priority.slice(1)}</span>
+        <span class="days-left ${urgentClass}">${daysLeft} days left</span>
+      </div>
+    </div>
+  `;
+  
+  document.getElementById("upcomingTasks").appendChild(item);
+  
+  item.querySelector(".task-checkbox").addEventListener("change", function() {
+    if (this.checked) setTimeout(() => moveToCompleted(item, task), 500);
+  });
+  
+  if (animate) {
+    item.style.cssText = "opacity: 0; transform: translateY(-20px)";
+    setTimeout(() => {
+      item.style.transition = "all 0.3s ease";
+      item.style.cssText = "opacity: 1; transform: translateY(0)";
+    }, 100);
+  }
+}
+
+// Add Completed Task to DOM
+function addCompletedToDOM(task) {
+  const item = document.createElement("div");
+  item.className = "task-item completed";
+  item.dataset.dynamic = "true";
+  item.innerHTML = `
+    <div class="task-content">
+      <div class="task-info">
+        <span class="task-name">${task.name}</span>
+        <span class="task-date">Completed ${task.completedDate}</span>
+        <span class="task-subject">${task.subject}</span>
+      </div>
+      <div class="completion-badge">
+        <i class="ph ph-check"></i>
+      </div>
+    </div>
+  `;
+  document.getElementById("completedTasks").appendChild(item);
+}
+
+// Load All Tasks
+function loadTasks() {
+  // Clear dynamic tasks
+  document.querySelectorAll('[data-dynamic="true"]').forEach(el => el.remove());
+  
+  // Load pending and completed tasks
+  getTasks().forEach(task => addTaskToDOM(task, false));
+  getCompleted().forEach(task => addCompletedToDOM(task));
+  
+  // Update statistics
+  updateStats();
+}
+
+// Move Task to Completed
+function moveToCompleted(item, task) {
+  const completed = {
+    ...task,
+    completed: true,
+    completedDate: new Date().toLocaleDateString("en-US", {
+      month: "short", day: "numeric", year: "numeric"
+    })
+  };
+  
+  // Update storage
+  saveTasks(getTasks().filter(t => t.id !== task.id));
+  window.dispatchEvent(new Event('tasksUpdated'));
+  saveCompleted([...getCompleted(), completed]);
+  
+  // Update DOM
+  addCompletedToDOM(completed);
+  item.remove();
+  updateStats();
+  
+  showNotification("Task completed!");
+}
+
+// Form Submission
+document.getElementById("taskForm").addEventListener("submit", function(e) {
+  e.preventDefault();
+  
+  const date = new Date(document.getElementById("taskDate").value);
+  const task = {
+    id: Date.now(),
+    name: document.getElementById("taskName").value,
+    subject: document.getElementById("taskSubject").value,
+    date: document.getElementById("taskDate").value,
+    formattedDate: date.toLocaleDateString("en-US", {
+      month: "short", day: "numeric", year: "numeric"
+    }),
+    priority: document.getElementById("taskPriority").value,
+    completed: false
+  };
+  
+  saveTasks([...getTasks(), task]);
+  addTaskToDOM(task, true);
+  updateStats();
+
+  addTaskNotification(task);
+
+  this.reset();
+  document.getElementById("add-task-modal").checked = false;
+  showNotification("Task added successfully!");
+});
+
+// Reset All Tasks
+function resetAllTasks() {
+  if (confirm("Are you sure you want to reset all tasks? This will delete everything.")) {
+    localStorage.removeItem("deadlineBuddyTasks");
+    localStorage.removeItem("deadlineBuddyCompletedTasks");
+    document.getElementById("upcomingTasks").innerHTML = "";
+    document.getElementById("completedTasks").innerHTML = "";
+    updateStats();
+    showNotification("All tasks have been reset!");
+  }
+}
+
+// Load Subjects
+function loadSubjects() {
+  const select = document.getElementById("taskSubject");
+  const stored = JSON.parse(localStorage.getItem("subjects") || "[]");
+  const defaults = [
+    "OOP in JAVA", "Data Structures", "Web Development"
+  ];
+  
+  (stored.length > 0 ? stored : defaults.map(name => ({name}))).forEach(sub => {
+    const opt = document.createElement("option");
+    opt.value = opt.textContent = sub.name;
+    select.appendChild(opt);
+  });
+}
+// Show Notification Toast
+function showNotification(message) {
+  const toast = document.createElement('div');
+  toast.style.cssText = `
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: linear-gradient(135deg, #00F5D4, #00D4AA);
+    color: #1A1A2E;
+    padding: 1rem 1.5rem;
+    border-radius: 8px;
+    font-weight: 600;
+    box-shadow: 0 4px 15px rgba(0, 245, 212, 0.4);
+    z-index: 10000;
+  `;
+  toast.textContent = message;
+  
+  document.body.appendChild(toast);
+  
+  setTimeout(() => {
+    toast.style.opacity = '0';
+    toast.style.transform = 'translateX(400px)';
+    toast.style.transition = 'all 0.3s ease';
+    setTimeout(() => toast.remove(), 300);
+  }, 3000);
+}
+// Initialize
+document.addEventListener("DOMContentLoaded", () => {
+  loadSubjects();
+  loadTasks();
+  document.getElementById("taskDate").min = new Date().toISOString().split("T")[0];
+});
+
+    </script>
+  </body>
+</html>

@@ -1,0 +1,569 @@
+<!-- notifications.html (JSON-based page) -->
+ <!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Notifications - Deadline Buddy</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;700&family=Fira+Code:wght@400&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.0.3/src/regular/style.css">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="main-nav">
+        <div class="nav-brand">
+            <i class="ph ph-target"></i>
+            <h1>Deadline Buddy</h1>
+        </div>
+        <ul class="nav-links">
+            <li><a href="dashboard.html" class="nav-link"><i class="ph ph-house"></i> Dashboard</a></li>
+            <li><a href="subjects.html" class="nav-link"><i class="ph ph-books"></i> Subjects</a></li>
+            <li><a href="notifications.html" class="nav-link active"><i class="ph ph-bell"></i> Notifications</a></li>
+            <li><a href="study-tips.html" class="nav-link"><i class="ph ph-lightbulb"></i> Study Tips</a></li>
+            <li><a href="profile.html" class="nav-link"><i class="ph ph-user"></i> Profile</a></li>
+        </ul>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <section class="section active">
+            <div class="section-header">
+                <h2><i class="ph ph-bell-ringing"></i> Notifications & Reminders</h2>
+                <div class="button-group">
+                    <button class="btn-primary" id="markAllRead">
+                        <i class="ph ph-check-circle"></i> Mark All as Read
+                    </button>
+                    <button class="btn-primary" id="clearAll">
+                        <i class="ph ph-trash"></i> Clear All
+                    </button>
+                </div>
+            </div>
+
+            <!-- Filter Tabs -->
+            <div class="filter-tabs">
+                <button class="filter-tab active" data-filter="all">All</button>
+                <button class="filter-tab" data-filter="unread">Unread</button>
+                <button class="filter-tab" data-filter="high">High Priority</button>
+                <button class="filter-tab" data-filter="deadline">Deadlines</button>
+                <button class="filter-tab" data-filter="exam">Exams</button>
+            </div>
+
+            <!-- Notifications List -->
+            <div class="notifications-container" id="notificationsContainer">
+                <div class="loading-spinner">Loading notifications...</div>
+            </div>
+        </section>
+    </main>
+
+ <script>
+    // ==================== OOP IMPLEMENTATION ====================
+    
+    // Notification Class
+    class Notification {
+        constructor(id, title, message, type, priority, subject, date, time, read = false) {
+            this.id = id;
+            this.title = title;
+            this.message = message;
+            this.type = type;
+            this.priority = priority;
+            this.subject = subject;
+            this.date = date;
+            this.time = time;
+            this.read = read;
+        }
+
+        // Mark notification as read
+        markAsRead() {
+            this.read = true;
+        }
+
+        // Get icon class based on notification type
+        getIconClass() {
+            const icons = {
+                'deadline': 'ph ph-alarm',
+                'exam': 'ph ph-graduation-cap',
+                'reminder': 'ph ph-bell-ringing'
+            };
+            return icons[this.type] || 'ph ph-info';
+        }
+
+        // Format date
+        getFormattedDate() {
+            const date = new Date(this.date);
+            return date.toLocaleDateString('en-US', { 
+                month: 'short', 
+                day: 'numeric', 
+                year: 'numeric' 
+            });
+        }
+
+        // Calculate time left
+        getTimeLeft() {
+            const now = new Date();
+            const targetDate = new Date(this.date);
+            const diffTime = targetDate - now;
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            
+            if (diffDays < 0) return 'Overdue';
+            if (diffDays === 0) return 'Today';
+            if (diffDays === 1) return 'Tomorrow';
+            return `${diffDays} days left`;
+        }
+
+        // Check if notification matches filter
+        matchesFilter(filter) {
+            if (filter === 'all') return true;
+            if (filter === 'unread') return !this.read;
+            if (filter === 'high') return this.priority === 'high';
+            return this.type === filter;
+        }
+
+        // Render notification HTML
+        renderHTML() {
+            return `
+                <div class="notification-card ${this.read ? 'read' : 'unread'} priority-${this.priority}" data-id="${this.id}">
+                    <div class="notification-icon ${this.type}">
+                        <i class="${this.getIconClass()}"></i>
+                    </div>
+                    <div class="notification-content">
+                        <div class="notification-header">
+                            <h3>${this.title}</h3>
+                            <span class="priority-badge ${this.priority}">${this.priority}</span>
+                        </div>
+                        <p class="notification-message">${this.message}</p>
+                        <div class="notification-meta">
+                            <span class="notification-subject">
+                                <i class="ph ph-book"></i> ${this.subject}
+                            </span>
+                            <span class="notification-date">
+                                <i class="ph ph-calendar"></i> ${this.getFormattedDate()} at ${this.time}
+                            </span>
+                            <span class="notification-time-left">
+                                <i class="ph ph-clock"></i> ${this.getTimeLeft()}
+                            </span>
+                        </div>
+                    </div>
+                    <div class="notification-actions">
+                        ${!this.read ? `<button class="action-btn mark-read" onclick="notificationManager.markNotificationAsRead(${this.id})">
+                            <i class="ph ph-check"></i>
+                        </button>` : ''}
+                        <button class="action-btn delete" onclick="notificationManager.deleteNotification(${this.id})">
+                            <i class="ph ph-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+    }
+
+    // NotificationManager Class
+    class NotificationManager {
+        constructor() {
+            this.notifications = [];
+            this.currentFilter = 'all';
+            this.container = document.getElementById('notificationsContainer');
+        }
+
+        // Load notifications from JSON and localStorage
+        async loadNotifications() {
+            try {
+                const savedNotifications = localStorage.getItem('deadlineBuddyNotifications');
+                
+                if (savedNotifications) {
+                    // Load from localStorage and convert to Notification objects
+                    const data = JSON.parse(savedNotifications);
+                    this.notifications = data.map(n => 
+                        new Notification(n.id, n.title, n.message, n.type, n.priority, 
+                                       n.subject, n.date, n.time, n.read)
+                    );
+                } else {
+                    // First time load from JSON
+                    const response = await fetch('notifications.json');
+                    const data = await response.json();
+                    this.notifications = data.map(n => 
+                        new Notification(n.id, n.title, n.message, n.type, n.priority, 
+                                       n.subject, n.date, n.time, n.read)
+                    );
+                    this.saveToStorage();
+                }
+                
+                this.renderNotifications();
+            } catch (error) {
+                console.error('Error loading notifications:', error);
+                this.container.innerHTML = 
+                    '<p class="error-message">Failed to load notifications. Please try again later.</p>';
+            }
+        }
+
+        // Save notifications to localStorage
+        saveToStorage() {
+            const data = this.notifications.map(n => ({
+                id: n.id,
+                title: n.title,
+                message: n.message,
+                type: n.type,
+                priority: n.priority,
+                subject: n.subject,
+                date: n.date,
+                time: n.time,
+                read: n.read
+            }));
+            localStorage.setItem('deadlineBuddyNotifications', JSON.stringify(data));
+        }
+
+        // Filter notifications based on current filter
+        getFilteredNotifications() {
+            return this.notifications.filter(notif => notif.matchesFilter(this.currentFilter));
+        }
+
+        // Render notifications to DOM
+        renderNotifications() {
+            const filteredNotifications = this.getFilteredNotifications();
+
+            if (filteredNotifications.length === 0) {
+                this.container.innerHTML = '<p class="no-notifications">No notifications to display</p>';
+                return;
+            }
+
+            this.container.innerHTML = filteredNotifications
+                .map(notif => notif.renderHTML())
+                .join('');
+        }
+
+        // Mark notification as read
+        markNotificationAsRead(id) {
+            const notification = this.notifications.find(n => n.id === id);
+            if (notification) {
+                notification.markAsRead();
+                this.saveToStorage();
+                this.renderNotifications();
+                this.showNotification('Marked as read');
+            }
+        }
+
+        // Delete notification
+        deleteNotification(id) {
+            if (confirm('Are you sure you want to delete this notification?')) {
+                this.notifications = this.notifications.filter(n => n.id !== id);
+                this.saveToStorage();
+                this.renderNotifications();
+                this.showNotification('Notification deleted');
+            }
+        }
+
+        // Mark all as read
+        markAllAsRead() {
+            this.notifications.forEach(n => n.markAsRead());
+            this.saveToStorage();
+            this.renderNotifications();
+            this.showNotification('All notifications marked as read');
+        }
+
+        // Clear all notifications
+        clearAll() {
+            if (confirm('Are you sure you want to clear all notifications?')) {
+                this.notifications = [];
+                this.saveToStorage();
+                this.renderNotifications();
+                this.showNotification('All notifications cleared');
+            }
+        }
+
+        // Set filter
+        setFilter(filter) {
+            this.currentFilter = filter;
+            this.renderNotifications();
+        }
+
+        // Show notification toast
+        showNotification(message) {
+            const notification = document.createElement('div');
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: linear-gradient(135deg, #00F5D4, #00D4AA);
+                color: #1A1A2E;
+                padding: 1rem 1.5rem;
+                border-radius: 8px;
+                font-weight: 600;
+                box-shadow: 0 4px 15px rgba(0, 245, 212, 0.4);
+                z-index: 10000;
+                animation: slideIn 0.3s ease;
+            `;
+            notification.textContent = message;
+            
+            const style = document.createElement('style');
+            style.textContent = `
+                @keyframes slideIn {
+                    from {
+                        transform: translateX(400px);
+                        opacity: 0;
+                    }
+                    to {
+                        transform: translateX(0);
+                        opacity: 1;
+                    }
+                }
+            `;
+            document.head.appendChild(style);
+            
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.style.animation = 'slideIn 0.3s ease reverse';
+                setTimeout(() => notification.remove(), 300);
+            }, 3000);
+        }
+    }
+
+    // ==================== APPLICATION INITIALIZATION ====================
+
+    // Create global instance of NotificationManager
+    const notificationManager = new NotificationManager();
+
+    // Event Listeners
+    document.getElementById('markAllRead').addEventListener('click', () => {
+        notificationManager.markAllAsRead();
+    });
+
+    document.getElementById('clearAll').addEventListener('click', () => {
+        notificationManager.clearAll();
+    });
+
+    document.querySelectorAll('.filter-tab').forEach(tab => {
+        tab.addEventListener('click', (e) => {
+            document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
+            e.target.classList.add('active');
+            notificationManager.setFilter(e.target.dataset.filter);
+        });
+    });
+
+    // Initialize on page load
+    document.addEventListener('DOMContentLoaded', () => {
+        notificationManager.loadNotifications();
+    });
+</script>
+    <style>
+        /* Notifications Specific Styles */
+        .filter-tabs {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .filter-tab {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #EAEAEA;
+            padding: 0.6rem 1.2rem;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .filter-tab:hover {
+            background: rgba(0, 245, 212, 0.1);
+            border-color: rgba(0, 245, 212, 0.3);
+        }
+
+        .filter-tab.active {
+            background: linear-gradient(135deg, #00F5D4, #00D4AA);
+            color: #090A0F;
+            border-color: transparent;
+        }
+
+        .notifications-container {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .notification-card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 1.5rem;
+            display: flex;
+            gap: 1rem;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .notification-card.unread {
+            background: rgba(0, 245, 212, 0.05);
+            border-left: 4px solid #00F5D4;
+        }
+
+        .notification-card:hover {
+            transform: translateX(5px);
+            box-shadow: 0 4px 20px rgba(0, 245, 212, 0.2);
+        }
+
+        .notification-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            flex-shrink: 0;
+        }
+
+        .notification-icon.deadline {
+            background: linear-gradient(135deg, #FF6384, #FF4757);
+            color: #090A0F;
+        }
+
+        .notification-icon.exam {
+            background: linear-gradient(135deg, #FFCE56, #FFA726);
+            color: #090A0F;
+        }
+
+        .notification-icon.reminder {
+            background: linear-gradient(135deg, #4BC0C0, #26C6DA);
+            color: #090A0F;
+        }
+
+        .notification-content {
+            flex: 1;
+        }
+
+        .notification-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+
+        .notification-header h3 {
+            margin: 0;
+            font-size: 1.1rem;
+            color: #EAEAEA;
+        }
+
+        .priority-badge {
+            padding: 0.3rem 0.8rem;
+            border-radius: 12px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            font-family: 'Fira Code', monospace;
+        }
+
+        .priority-badge.high {
+            background: rgba(255, 99, 132, 0.2);
+            color: #FF6384;
+        }
+
+        .priority-badge.medium {
+            background: rgba(255, 206, 84, 0.2);
+            color: #FFCE56;
+        }
+
+        .priority-badge.low {
+            background: rgba(75, 192, 192, 0.2);
+            color: #4BC0C0;
+        }
+
+        .notification-message {
+            margin: 0.5rem 0;
+            opacity: 0.8;
+            line-height: 1.5;
+        }
+
+        .notification-meta {
+            display: flex;
+            gap: 1.5rem;
+            flex-wrap: wrap;
+            font-size: 0.85rem;
+            opacity: 0.7;
+            margin-top: 0.8rem;
+        }
+
+        .notification-meta span {
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+        }
+
+        .notification-meta i {
+            color: #00F5D4;
+        }
+
+        .notification-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .action-btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #EAEAEA;
+            width: 35px;
+            height: 35px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .action-btn:hover {
+            transform: scale(1.1);
+        }
+
+        .action-btn.mark-read:hover {
+            background: rgba(0, 245, 212, 0.2);
+            border-color: #00F5D4;
+        }
+
+        .action-btn.delete:hover {
+            background: rgba(255, 99, 132, 0.2);
+            border-color: #FF6384;
+        }
+
+        .loading-spinner {
+            text-align: center;
+            padding: 3rem;
+            opacity: 0.7;
+        }
+
+        .no-notifications {
+            text-align: center;
+            padding: 3rem;
+            opacity: 0.7;
+            font-size: 1.1rem;
+        }
+
+        .error-message {
+            text-align: center;
+            padding: 3rem;
+            color: #FF6384;
+        }
+
+        @media (max-width: 768px) {
+            .notification-card {
+                flex-direction: column;
+            }
+
+            .notification-actions {
+                flex-direction: row;
+                justify-content: flex-end;
+            }
+
+            .notification-meta {
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+        }
+    </style>
+</body>
+</html>
