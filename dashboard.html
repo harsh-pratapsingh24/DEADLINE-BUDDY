@@ -22,22 +22,12 @@
         <h1>Deadline Buddy</h1>
       </div>
       <ul class="nav-links">
-        <li>
-          <a href="dashboard.html" class="nav-link active"
-            ><i class="ph ph-house"></i> Dashboard</a
-          >
-        </li>
-        <li>
-          <a href="subjects.html" class="nav-link"
-            ><i class="ph ph-books"></i> Subjects</a
-          >
-        </li>
-        <li>
-          <a href="profile.html" class="nav-link"
-            ><i class="ph ph-user"></i> Profile</a
-          >
-        </li>
-      </ul>
+    <li><a href="dashboard.html" class="nav-link"><i class="ph ph-house"></i> Dashboard</a></li>
+    <li><a href="subjects.html" class="nav-link"><i class="ph ph-books"></i> Subjects</a></li>
+    <li><a href="notifications.html" class="nav-link"><i class="ph ph-bell"></i> Notifications</a></li>
+    <li><a href="study-tips.html" class="nav-link"><i class="ph ph-lightbulb"></i> Study Tips</a></li>
+    <li><a href="profile.html" class="nav-link"><i class="ph ph-user"></i> Profile</a></li>
+    </ul>
     </nav>
 
     <!-- Add Task Modal -->
@@ -198,11 +188,84 @@
           
 
     <script>
+      
 // Task Storage Management
 const getTasks = () => JSON.parse(localStorage.getItem("deadlineBuddyTasks") || "[]");
 const saveTasks = (tasks) => localStorage.setItem("deadlineBuddyTasks", JSON.stringify(tasks));
 const getCompleted = () => JSON.parse(localStorage.getItem("deadlineBuddyCompletedTasks") || "[]");
 const saveCompleted = (tasks) => localStorage.setItem("deadlineBuddyCompletedTasks", JSON.stringify(tasks));
+
+// Function to add notification when a new task is created
+async function addTaskNotification(taskData) {
+    try {
+        // Get existing notifications from localStorage
+        let notifications = JSON.parse(localStorage.getItem('deadlineBuddyNotifications') || '[]');
+        
+        // If localStorage is empty, load from JSON first
+        if (notifications.length === 0) {
+            try {
+                const response = await fetch('notifications.json');
+                notifications = await response.json();
+            } catch (error) {
+                console.log('No existing notifications found, starting fresh');
+                notifications = [];
+            }
+        }
+        
+        // Generate a unique ID for the notification
+        const newNotificationId = notifications.length > 0 
+            ? Math.max(...notifications.map(n => n.id)) + 1 
+            : 1;
+        
+        // Determine priority based on days until deadline
+        const taskDate = new Date(taskData.date);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        taskDate.setHours(0, 0, 0, 0);
+        const daysUntil = Math.ceil((taskDate - today) / (1000 * 60 * 60 * 24));
+        
+        let priority = taskData.priority || 'low';
+        
+        // Determine notification type
+        let notificationType = 'deadline';
+        
+        // Create descriptive message based on days until deadline
+        let messageText = '';
+        if (daysUntil < 0) {
+            messageText = `${taskData.name} was due ${Math.abs(daysUntil)} days ago`;
+        } else if (daysUntil === 0) {
+            messageText = `${taskData.name} is due today`;
+        } else if (daysUntil === 1) {
+            messageText = `${taskData.name} is due tomorrow`;
+        } else {
+            messageText = `${taskData.name} for ${taskData.subject} is due in ${daysUntil} days`;
+        }
+        
+        // Create new notification object matching JSON structure
+        const newNotification = {
+            id: newNotificationId,
+            type: notificationType,
+            title: `New Task: ${taskData.name}`,
+            message: messageText,
+            priority: priority,
+            date: taskData.date,
+            time: '11:59 PM',
+            subject: taskData.subject,
+            read: false
+        };
+        
+        // Add to beginning of notifications array (newest first)
+        notifications.unshift(newNotification);
+        
+        // Save back to localStorage
+        localStorage.setItem('deadlineBuddyNotifications', JSON.stringify(notifications));
+        
+        console.log('Notification created successfully:', newNotification);
+        
+    } catch (error) {
+        console.error('Error creating notification:', error);
+    }
+}
 
 // Update Statistics
 function updateStats() {
@@ -359,7 +422,9 @@ document.getElementById("taskForm").addEventListener("submit", function(e) {
   saveTasks([...getTasks(), task]);
   addTaskToDOM(task, true);
   updateStats();
-  
+
+  addTaskNotification(task);
+
   this.reset();
   document.getElementById("add-task-modal").checked = false;
   showNotification("Task added successfully!");
@@ -382,8 +447,7 @@ function loadSubjects() {
   const select = document.getElementById("taskSubject");
   const stored = JSON.parse(localStorage.getItem("subjects") || "[]");
   const defaults = [
-    "Calculus", "Data Structures", "Web Development",
-    "Physics", "History", "Chemistry"
+    "OOP in JAVA", "Data Structures", "Web Development"
   ];
   
   (stored.length > 0 ? stored : defaults.map(name => ({name}))).forEach(sub => {
@@ -392,7 +456,32 @@ function loadSubjects() {
     select.appendChild(opt);
   });
 }
-
+// Show Notification Toast
+function showNotification(message) {
+  const toast = document.createElement('div');
+  toast.style.cssText = `
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: linear-gradient(135deg, #00F5D4, #00D4AA);
+    color: #1A1A2E;
+    padding: 1rem 1.5rem;
+    border-radius: 8px;
+    font-weight: 600;
+    box-shadow: 0 4px 15px rgba(0, 245, 212, 0.4);
+    z-index: 10000;
+  `;
+  toast.textContent = message;
+  
+  document.body.appendChild(toast);
+  
+  setTimeout(() => {
+    toast.style.opacity = '0';
+    toast.style.transform = 'translateX(400px)';
+    toast.style.transition = 'all 0.3s ease';
+    setTimeout(() => toast.remove(), 300);
+  }, 3000);
+}
 // Initialize
 document.addEventListener("DOMContentLoaded", () => {
   loadSubjects();
