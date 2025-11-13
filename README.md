@@ -1,0 +1,1 @@
+Deadline Buddy is an app that assists with the upcoming assignments , tests , exams etc. and helps keep a check on the dates and deadlines on the basis of priority . It also lets you add subjects , add tasks , clear them .
